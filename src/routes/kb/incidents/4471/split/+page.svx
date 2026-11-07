@@ -21,9 +21,18 @@ dates month first. The reports say otherwise. Read by tenant and by what each re
 first one.
 
 <Callout kind="warn">
-#4471 is not known. Split it: one ticket per problem below. Do not close #4471's reports when the
-parser fix ships; the other two problems will keep sending them.
+
+#4471 is closed, but not done. Engineering closed it on 5 October 2026 with the parser fix and by
+retiring the booking-v3 form. That ends two of the three problems. The third, `shift`, is still
+open in [#3](https://github.com/brutkowska71-pixel/support-kb-4471/issues/3): neither change touches it.
+
 </Callout>
+
+## Where each problem stands
+
+- `parser` — **fixed**: `fix(dates): parse dd/mm for eu locales`. Ticket closed.
+- `hint` — **won't fix**: the booking-v3 form is retired, so its `MM/DD/YYYY` hint is gone. Ticket closed.
+- `shift` — **open**: a one-day, time-zone move. Expect more of these reports after #4471 closed.
 
 ## What #4471 holds
 
@@ -81,7 +90,8 @@ For comparison, the existing cause table, which files the one-day moves under pa
 
 ## Next
 
-- One ticket per problem, linked in the table above. Each carries its own count.
+- Keep [#3](https://github.com/brutkowska71-pixel/support-kb-4471/issues/3) open until someone
+  traces how invite dates cross time zones. New one-day-move reports go there, not into a closed #4471.
 - A new decision record to replace 0001: same subject is not same problem. Split by cause
   (tenant, form and channel), not by subject.
 

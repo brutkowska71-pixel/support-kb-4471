@@ -13,6 +13,7 @@
   const problems = $derived(groups.filter((g) => g.problem !== 'unplaced').length);
   const wrongTag = $derived(mistagged(groups));
   const tickets = filed.tickets as Record<string, number>;
+  const state = (filed.state ?? {}) as Record<string, string>;
   const link = (p: string) => (tickets[p] && filed.repo ? `https://github.com/${filed.repo}/issues/${tickets[p]}` : null);
   const title = (p: string) => PROBLEM_TITLE[p as Problem] ?? 'no tenant on file';
   const tags = (g: { taggedAs: Record<string, number> }) =>
@@ -41,7 +42,7 @@
         <td class="tags">{tags(g)}</td>
         <td>{g.tenants}</td>
         <td>{g.firstSeen} → {g.lastSeen}</td>
-        <td>{#if href}<a {href}>#{tickets[g.problem]}</a>{:else}<span class="none">none yet</span>{/if}</td>
+        <td>{#if href}<a {href}>#{tickets[g.problem]}</a>{#if state[g.problem]}<br /><span class="st {state[g.problem] === 'open' ? 'open' : ''}">{state[g.problem]}</span>{/if}{:else}<span class="none">none yet</span>{/if}</td>
       </tr>
     {/each}
   </tbody>
@@ -52,4 +53,6 @@
   .what { color: var(--muted); font-size: 0.85em; }
   .tags { color: var(--muted); font-size: 0.85em; }
   .none { color: var(--warn); font-weight: 600; }
+  .st { color: var(--muted); font-size: 0.85em; }
+  .st.open { color: var(--warn); font-weight: 600; }
 </style>
