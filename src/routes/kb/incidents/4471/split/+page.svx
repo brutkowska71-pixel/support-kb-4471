@@ -4,7 +4,7 @@ title: '#4471 · three problems, not one'
 owner: Beata Rutkowska
 status: open
 reviewed: 2026-11-07
-signature: Beata Rutkowska
+signature: v1.eyJzdWIiOiI1Mzk0IiwiYXVkIjoiY2hhbGxlbmdlOndoYXQtaXQtc2hvd3MiLCJpYXQiOjE3OTQwODQ3MzksImV4cCI6MTc5NDE3MTEzOX0.TJnvVTvZsU-VE47KQlMdwtg7aitv7ILp1XN8rpdl3Hc
 ---
 
 <script>
