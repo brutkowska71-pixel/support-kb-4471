@@ -2,14 +2,15 @@
   import reports from '#lib/data/reports-4471.json';
   import notes from '#lib/data/desk-notes.json';
   import filed from '#lib/data/problem-tickets.json';
-  import { groupByProblem, mistagged, PROBLEM_TITLE, type Problem } from '#lib/kb/problems';
+  import { groupByProblem, mergedCount, mistagged, PROBLEM_TITLE, type Problem } from '#lib/kb/problems';
   import type { Report } from '#lib/kb/causes';
   import { tenantOf } from '#lib/kb/locales';
 
   let { ticket }: { ticket: number } = $props();
 
   const groups = $derived(groupByProblem(reports as Report[], ticket, tenantOf, notes.oneDayMove));
-  const total = $derived(groups.reduce((n, g) => n + g.reports.length, 0));
+  const total = $derived(mergedCount(groups));
+  const problems = $derived(groups.filter((g) => g.problem !== 'unplaced').length);
   const wrongTag = $derived(mistagged(groups));
   const tickets = filed.tickets as Record<string, number>;
   const link = (p: string) => (tickets[p] && filed.repo ? `https://github.com/${filed.repo}/issues/${tickets[p]}` : null);
@@ -23,7 +24,7 @@
 
 <p class="sum">
   <strong>{total}</strong> reports merged into #{ticket} ·
-  <strong>{groups.length}</strong> {groups.length === 1 ? 'problem' : 'problems'} ·
+  <strong>{problems}</strong> {problems === 1 ? 'problem' : 'problems'} ·
   <strong>{wrongTag}</strong> tagged by intake as the wrong one
 </p>
 
@@ -36,7 +37,7 @@
       {@const href = link(g.problem)}
       <tr>
         <td><code>{g.problem}</code><br /><span class="what">{title(g.problem)}</span></td>
-        <td>{g.reports.length}</td>
+        <td>{g.reports.length}{#if g.alsoUnder}<br /><span class="what">also in {g.alsoUnder}</span>{/if}</td>
         <td class="tags">{tags(g)}</td>
         <td>{g.tenants}</td>
         <td>{g.firstSeen} → {g.lastSeen}</td>

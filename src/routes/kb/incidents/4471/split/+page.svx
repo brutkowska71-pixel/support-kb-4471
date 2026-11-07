@@ -29,8 +29,10 @@ parser fix ships; the other two problems will keep sending them.
 
 <ProblemTable ticket={4471} />
 
-The counts come from `reports-4471.json` at render time. The export repeats some reports across
-its pages; each id counts once.
+The counts come from `reports-4471.json` at render time, counted the desk's way: each report
+sits under its cause by tenant, as the desk's cause table files it. The `shift` reports are still
+filed under `parser` there, so they count in both rows. The export repeats some reports across its
+pages; each id counts once.
 
 ## parser: the shared parser reads day-first dates month first
 
@@ -58,7 +60,8 @@ fix does not touch this: these dates are already wrong when the form submits the
 
 These reports do not describe a flipped day and month. The date moves by one day, or the same
 meeting shows a different day to people in different time zones. A flipped date cannot do that.
-The desk noticed it and listed them (`desk-notes.json`), but #4471 still counts them as parser.
+The desk noticed it and listed them (`desk-notes.json`); its cause table still files them under
+parser by tenant, so they are counted there too.
 
 <ProblemReports ticket={4471} problem="shift" limit={5} />
 

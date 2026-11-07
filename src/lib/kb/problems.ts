@@ -14,11 +14,6 @@ export const PROBLEM_TITLE: Record<Problem, string> = {
   shift: 'Dates move by one day across time zones',
 };
 
-export function problemOf(r: Report, t: Tenant | undefined, shiftIds: readonly string[]): Problem | null {
-  if (shiftIds.includes(r.id)) return 'shift';
-  return causeOf(r, t);
-}
-
 export type ProblemGroup = {
   problem: Problem | 'unplaced';
   reports: Report[];
@@ -26,9 +21,26 @@ export type ProblemGroup = {
   tenants: number;
   firstSeen: string;
   lastSeen: string;
+  // For `shift`: the cause the desk also files these reports under, by tenant.
+  alsoUnder?: Cause;
 };
 
-// One row per problem among the reports merged into `ticket`. Export pages overlap: one id, one report.
+function summarize(problem: ProblemGroup['problem'], rs: Report[]): ProblemGroup {
+  const days = rs.map((r) => r.receivedAt.slice(0, 10)).sort();
+  return {
+    problem,
+    reports: rs,
+    taggedAs: rs.reduce<Record<string, number>>((n, r) => ({ ...n, [r.meta.intakeTag]: (n[r.meta.intakeTag] ?? 0) + 1 }), {}),
+    tenants: new Set(rs.map((r) => r.tenant)).size,
+    firstSeen: days[0],
+    lastSeen: days[days.length - 1],
+  };
+}
+
+// One row per problem among the reports merged into `ticket`, counted the desk's way: every report
+// sits under its cause by tenant (causes.ts), as CauseTable files it. The one-day moves the desk
+// listed (desk-notes.json) stay counted under that cause and also get a row of their own.
+// Export pages overlap: one id, one report.
 export function groupByProblem(
   all: Report[],
   ticket: number,
@@ -38,25 +50,26 @@ export function groupByProblem(
   const merged = uniqueById(all).filter((r) => r.mergedInto === ticket);
   const by = new Map<ProblemGroup['problem'], Report[]>();
   for (const r of merged) {
-    const p = problemOf(r, tenantOf(r), shiftIds) ?? 'unplaced';
+    const p = causeOf(r, tenantOf(r)) ?? 'unplaced';
     by.set(p, [...(by.get(p) ?? []), r]);
   }
-  return [...by.entries()]
-    .map(([problem, rs]) => {
-      const days = rs.map((r) => r.receivedAt.slice(0, 10)).sort();
-      return {
-        problem,
-        reports: rs,
-        taggedAs: rs.reduce<Record<string, number>>((n, r) => ({ ...n, [r.meta.intakeTag]: (n[r.meta.intakeTag] ?? 0) + 1 }), {}),
-        tenants: new Set(rs.map((r) => r.tenant)).size,
-        firstSeen: days[0],
-        lastSeen: days[days.length - 1],
-      };
-    })
-    .sort((a, b) => b.reports.length - a.reports.length);
+  const groups = [...by.entries()].map(([p, rs]) => summarize(p, rs)).sort((a, b) => b.reports.length - a.reports.length);
+  const moved = merged.filter((r) => shiftIds.includes(r.id));
+  if (moved.length) {
+    const under = [...new Set(moved.map((r) => causeOf(r, tenantOf(r))))];
+    groups.push({ ...summarize('shift', moved), alsoUnder: under.length === 1 && under[0] ? under[0] : undefined });
+  }
+  return groups;
 }
 
-// Reports whose intake tag names a different problem than the one they belong to.
+// Merged reports, each counted once (the shift row repeats reports already under a cause).
+export function mergedCount(groups: ProblemGroup[]): number {
+  return groups.filter((g) => g.problem !== 'shift').reduce((n, g) => n + g.reports.length, 0);
+}
+
+// Reports whose intake tag names a different cause than the one they are filed under.
 export function mistagged(groups: ProblemGroup[]): number {
-  return groups.reduce((n, g) => n + g.reports.filter((r) => r.meta.intakeTag !== g.problem).length, 0);
+  return groups
+    .filter((g) => g.problem !== 'shift')
+    .reduce((n, g) => n + g.reports.filter((r) => r.meta.intakeTag !== g.problem).length, 0);
 }
