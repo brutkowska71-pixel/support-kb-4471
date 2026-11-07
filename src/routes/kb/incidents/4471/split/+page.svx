@@ -1,0 +1,85 @@
+---
+layout: runbook
+title: '#4471 · three problems, not one'
+owner: Beata Rutkowska
+status: open
+reviewed: 2026-11-07
+signature: Beata Rutkowska
+---
+
+<script>
+  import ProblemTable from '#lib/kb/ProblemTable.svelte';
+  import ProblemReports from '#lib/kb/ProblemReports.svelte';
+  import CauseTable from '#lib/kb/CauseTable.svelte';
+  import Callout from '#lib/kb/Callout.svelte';
+  import RenderStamp from '#lib/kb/RenderStamp.svelte';
+</script>
+
+[#4471](/kb/incidents/4471) says every report about a wrong date is one bug: the parser reads
+dates month first. The reports say otherwise. Read by tenant and by what each report describes,
+#4471 holds three problems with three different fixes. The queued parser fix closes only the
+first one.
+
+<Callout kind="warn">
+#4471 is not known. Split it: one ticket per problem below. Do not close #4471's reports when the
+parser fix ships; the other two problems will keep sending them.
+</Callout>
+
+## What #4471 holds
+
+<ProblemTable ticket={4471} />
+
+The counts come from `reports-4471.json` at render time. The export repeats some reports across
+its pages; each id counts once.
+
+## parser: the shared parser reads day-first dates month first
+
+A day-first tenant books 7 April (`07/04`); the parser reads 4 July. Every channel shows it:
+the app, email, and the booking-v2 form, whose hint already says `DD/MM/YYYY`.
+
+<ProblemReports ticket={4471} problem="parser" />
+
+**Fix:** parse with the tenant's locale (`dayFirst()` in `causes.ts` already knows it). This is
+the fix #4471 queued.
+
+## hint: booking-v3 tells day-first tenants to type month first
+
+booking-v3 prints `MM/DD/YYYY` under its date field. The tenant's people type what the hint
+says, month first, and the form then reads the date the tenant's way, day first. The date flips
+before the parser sees it. Only reports that came in through the form, from day-first tenants
+on booking-v3, have this cause.
+
+<ProblemReports ticket={4471} problem="hint" />
+
+**Fix:** print the tenant's own date order under the field (or use a date picker). The parser
+fix does not touch this: these dates are already wrong when the form submits them.
+
+## shift: the date moves by one day
+
+These reports do not describe a flipped day and month. The date moves by one day, or the same
+meeting shows a different day to people in different time zones. A flipped date cannot do that.
+The desk noticed it and listed them (`desk-notes.json`), but #4471 still counts them as parser.
+
+<ProblemReports ticket={4471} problem="shift" limit={5} />
+
+**Fix:** look at time zones: how the invite's date is stored and sent (date-only values turned
+into midnight UTC, or a time zone or DST rule applied twice). Neither date-order fix touches it.
+
+## How they ended up in one ticket
+
+[Decision 0001](/kb/decisions/0001-dedupe-by-subject) merges reports by subject line. All three
+problems produce the same subjects ("Wrong day on the invite", "Month and day swapped?"), so they
+landed in one ticket. Intake's tag does not separate them either: it guesses from the reporter's
+browser, not the tenant.
+
+For comparison, the existing cause table, which files the one-day moves under parser:
+
+<CauseTable ticket={4471} />
+
+## Next
+
+- One ticket per problem, linked in the table above. Each carries its own count.
+- A new decision record to replace 0001: same subject is not same problem. Split by cause
+  (tenant, form and channel), not by subject.
+
+<RenderStamp {signature} />

@@ -1,0 +1,54 @@
+<script lang="ts">
+  import reports from '#lib/data/reports-4471.json';
+  import notes from '#lib/data/desk-notes.json';
+  import filed from '#lib/data/problem-tickets.json';
+  import { groupByProblem, mistagged, PROBLEM_TITLE, type Problem } from '#lib/kb/problems';
+  import type { Report } from '#lib/kb/causes';
+  import { tenantOf } from '#lib/kb/locales';
+
+  let { ticket }: { ticket: number } = $props();
+
+  const groups = $derived(groupByProblem(reports as Report[], ticket, tenantOf, notes.oneDayMove));
+  const total = $derived(groups.reduce((n, g) => n + g.reports.length, 0));
+  const wrongTag = $derived(mistagged(groups));
+  const tickets = filed.tickets as Record<string, number>;
+  const link = (p: string) => (tickets[p] && filed.repo ? `https://github.com/${filed.repo}/issues/${tickets[p]}` : null);
+  const title = (p: string) => PROBLEM_TITLE[p as Problem] ?? 'no tenant on file';
+  const tags = (g: { taggedAs: Record<string, number> }) =>
+    Object.entries(g.taggedAs)
+      .sort((a, b) => b[1] - a[1])
+      .map(([tag, n]) => `${tag} ×${n}`)
+      .join(' · ');
+</script>
+
+<p class="sum">
+  <strong>{total}</strong> reports merged into #{ticket} ·
+  <strong>{groups.length}</strong> {groups.length === 1 ? 'problem' : 'problems'} ·
+  <strong>{wrongTag}</strong> tagged by intake as the wrong one
+</p>
+
+<table>
+  <thead>
+    <tr><th>problem</th><th>reports</th><th>tagged as</th><th>tenants</th><th>seen</th><th>ticket</th></tr>
+  </thead>
+  <tbody>
+    {#each groups as g (g.problem)}
+      {@const href = link(g.problem)}
+      <tr>
+        <td><code>{g.problem}</code><br /><span class="what">{title(g.problem)}</span></td>
+        <td>{g.reports.length}</td>
+        <td class="tags">{tags(g)}</td>
+        <td>{g.tenants}</td>
+        <td>{g.firstSeen} → {g.lastSeen}</td>
+        <td>{#if href}<a {href}>#{tickets[g.problem]}</a>{:else}<span class="none">none yet</span>{/if}</td>
+      </tr>
+    {/each}
+  </tbody>
+</table>
+
+<style>
+  .sum { font-size: 1.1rem; }
+  .what { color: var(--muted); font-size: 0.85em; }
+  .tags { color: var(--muted); font-size: 0.85em; }
+  .none { color: var(--warn); font-weight: 600; }
+</style>
