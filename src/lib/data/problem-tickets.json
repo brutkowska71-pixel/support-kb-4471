@@ -1,4 +1,8 @@
 {
-  "repo": "",
-  "tickets": {}
+  "repo": "brutkowska71-pixel/support-kb-4471",
+  "tickets": {
+    "parser": 1,
+    "hint": 2,
+    "shift": 3
+  }
 }
